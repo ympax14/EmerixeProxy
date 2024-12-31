@@ -17,7 +17,7 @@ Ensuite vous retrouverez le fichier JAR dans le répertoire **/target/**.
     
 ## Roadmap
 
-- [ ]  Renvoyer les packets PacketLoginInEncryptionBegin et PacketLoginOutEncryptionBegin au Serveur et au Client respectivement lors de la connexion au Proxy
+- [ ]  Renvoyer les packets **__PacketLoginInEncryptionBegin__** et **__PacketLoginOutEncryptionBegin__** au **Serveur** et au **Client** respectivement lors de la connexion au Proxy
     - [ ]  PacketLoginInEncryptionBegin (packetId 15)
     - [ ]  PacketLoginOutEncryptionBegin (packetId ?) 
 
