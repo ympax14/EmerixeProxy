@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.emerixe.handler.MessageHandler;
-import com.emerixe.handler.ProxyMessageHandler;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -24,8 +23,8 @@ public class ServerRouter {
 
     public ServerRouter() {
         // Ajouter des serveurs à la carte (adresse et port des serveurs)
-        serverMap.put("hub", new InetSocketAddress("127.0.0.1", 25566));
-        serverMap.put("minigame", new InetSocketAddress("127.0.0.1", 25567));
+        serverMap.put("hub", new InetSocketAddress("127.0.0.1", 18546));
+        serverMap.put("minigame", new InetSocketAddress("127.0.0.1", 48216));
     }
 
     /**
@@ -67,7 +66,7 @@ public class ServerRouter {
                 onSuccess.accept(f.channel()); // Appel du callback de succès
             } else {
                 System.err.println("Échec de la connexion au serveur " + targetServer);
-                onError.accept(f.cause()); // Appel du callback d'erreur
+                if (onError != null) onError.accept(f.cause()); // Appel du callback d'erreur
                 f.cause().printStackTrace();
             }
         });

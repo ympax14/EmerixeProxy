@@ -13,8 +13,8 @@ public class PacketRegistry {
 
     public PacketRegistry() {
         // Enregistrement des paquets
-        registerPacket(0, LoginStartPacket.class);
-        registerPacket(1, ServerTransferPacket.class);
+        registerPacket(generatePacketId("LoginStartPacket"), LoginStartPacket.class);
+        registerPacket(generatePacketId("ServerTransferPacket"), ServerTransferPacket.class);
         // Ajouter d'autres paquets ici
     }
 
@@ -25,12 +25,20 @@ public class PacketRegistry {
     public MinecraftPacket decodePacket(int packetId, ByteBuf buf) throws Exception {
         Class<? extends MinecraftPacket> packetClass = packetMap.get(packetId);
         if (packetClass == null) {
-            System.out.println("Paquet inconnu : " + packetId);
+            //System.out.println("Paquet inconnu : " + packetId);
             return null;
         }
 
         MinecraftPacket packet = packetClass.getDeclaredConstructor().newInstance();
         packet.decode(buf);
         return packet;
+    }
+
+    public static int generatePacketId(String input) {
+        int id = 0;
+        for (char c : input.toCharArray()) {
+            id += (int) c; // Sum of ASCII values of the characters
+        }
+        return id;
     }
 }

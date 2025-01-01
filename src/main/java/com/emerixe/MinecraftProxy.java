@@ -4,6 +4,7 @@ import com.emerixe.handler.ProxyMessageHandler;
 import com.emerixe.manager.PlayerConnectionManager;
 import com.emerixe.manager.RedisManager;
 import com.emerixe.router.ServerRouter;
+import com.emerixe.scheduler.SchedulerExecutorService;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -18,6 +19,7 @@ public class MinecraftProxy {
     private final RedisManager redisManager;
     private final ServerRouter serverRouter;
     private final PlayerConnectionManager playerConnectionManager;
+    private final SchedulerExecutorService schedulerExecutorService;
 
     public MinecraftProxy(int port, String hubHost, int hubPort, String gameHost, int gamePort) {
         instance = this;
@@ -26,6 +28,7 @@ public class MinecraftProxy {
         this.redisManager = new RedisManager("localhost", 6379);
         this.serverRouter = new ServerRouter();
         this.playerConnectionManager = new PlayerConnectionManager();
+        this.schedulerExecutorService = new SchedulerExecutorService(2);
     }
 
     public static MinecraftProxy getInstance() {
@@ -42,6 +45,10 @@ public class MinecraftProxy {
 
     public PlayerConnectionManager getPlayerConnectionManager() {
         return playerConnectionManager;
+    }
+
+    public SchedulerExecutorService getSchedulerExecutorService() {
+        return schedulerExecutorService;
     }
 
     public void start() throws Exception {
@@ -69,6 +76,6 @@ public class MinecraftProxy {
     }
 
     public static void main(String[] args) throws Exception {
-        new MinecraftProxy(25565, "127.0.0.1", 25566, "127.0.0.1", 25567).start();
+        new MinecraftProxy(45654, "127.0.0.1", 18546, "127.0.0.1", 48216).start();
     }
 }

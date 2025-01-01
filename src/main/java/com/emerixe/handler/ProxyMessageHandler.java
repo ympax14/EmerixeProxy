@@ -3,17 +3,16 @@ package com.emerixe.handler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import com.emerixe.MinecraftProxy;
 import com.emerixe.packet.MinecraftPacket;
 import com.emerixe.packet.packets.LoginStartPacket;
 import com.emerixe.packet.packets.ServerTransferPacket;
 import com.emerixe.packet.registry.PacketRegistry;
-import com.emerixe.router.ServerRouter;
 import com.emerixe.session.PlayerSession;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -26,11 +25,6 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        // Intercepter le paquet "Login Start" envoyé par le client
-        System.out.println("[PROXY] Nouveau joueur connecté");
-
-        //MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(ctx.channel(), "hub");
-
         // Pour intercepter les paquets, d'abord traiter les paquets qui arrivent
         // via la méthode channelRead, ici on est dans channelActive donc on ne peut pas
         // encore récupérer directement les paquets, c'est pourquoi nous devons laisser
@@ -44,37 +38,43 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof ByteBuf) {
             ByteBuf buf = (ByteBuf) msg;
             ByteBuf copiedBuf = buf.copy();
-
-            buf.retain();
-            copiedBuf.retain();
+            ByteBuf copiedBuf2 = buf.copy();
     
             try {
-                int packetId = MinecraftPacket.readVarInt(buf); // Lire l'ID du paquet
+                int packetId = MinecraftPacket.readVarInt(copiedBuf); // Lire l'ID du paquet
 
+                // Intercepter le paquet "LoginStart" envoyé par le client
                 if (packetId == 15) {
-                    //ctx.channel().writeAndFlush(msg);
-                    // Rediriger le joueur vers le HUB
+                    if (!MinecraftProxy.getInstance().getPlayerConnectionManager().playerIsAlreadyConnected(ctx.channel().remoteAddress())) {
+                        System.out.println("[PROXY] Nouveau joueur (" + ctx.channel().remoteAddress() + ") connecté, redirection au HUB.");
+                    }
+
                     MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(
                         "hub",
                         ctx.channel(),
                         channel -> {
-                            channel.writeAndFlush(copiedBuf);
-                        },
-                        error -> {
-
-                        }
-                    );
+                            channel.writeAndFlush(copiedBuf2);
+                        }, null);
                 } else {
+                    buf.retain();
                     MinecraftPacket packet = packetRegistry.decodePacket(packetId, buf);
+
                     if (packet != null) {
                         handlePacket(packet);
                     }
                 }
-            } finally {
-                //copiedBuf.release();
+            } catch (Exception e) {
+                // TODO: handle exception
             }
 
-            super.channelRead(ctx, copiedBuf);
+            while (copiedBuf.refCnt() > 0) copiedBuf.release();
+
+            MinecraftProxy.getInstance().getSchedulerExecutorService().addTask(() -> {
+                while (copiedBuf2.refCnt() > 0) copiedBuf2.release();
+                while (buf.refCnt() > 0) buf.release();
+            }, 500, TimeUnit.MILLISECONDS);
+
+            super.channelRead(ctx, buf);
         } else super.channelRead(ctx, msg);
     }
 
