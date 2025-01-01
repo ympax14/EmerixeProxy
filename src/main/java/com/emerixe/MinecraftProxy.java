@@ -1,6 +1,8 @@
 package com.emerixe;
 
 import com.emerixe.handler.ProxyMessageHandler;
+import com.emerixe.handler.VarintFrameDecoder;
+import com.emerixe.handler.VarintFrameEncoder;
 import com.emerixe.manager.PlayerConnectionManager;
 import com.emerixe.manager.RedisManager;
 import com.emerixe.router.ServerRouter;
@@ -61,8 +63,11 @@ public class MinecraftProxy {
                     .channel(NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(new ProxyMessageHandler());
+                        protected void initChannel(SocketChannel ch) {
+                            ch.pipeline()
+                                .addLast("varintFrameDecoder", new VarintFrameDecoder())
+                                .addLast("varintFrameEncoder", new VarintFrameEncoder())
+                                .addLast("proxyHandler", new ProxyMessageHandler());
                         }
                     });
 

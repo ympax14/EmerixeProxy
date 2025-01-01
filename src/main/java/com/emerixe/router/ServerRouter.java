@@ -1,5 +1,7 @@
 package com.emerixe.router;
 
+import com.emerixe.handler.VarintFrameDecoder;
+import com.emerixe.handler.VarintFrameEncoder;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +13,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -38,17 +39,16 @@ public class ServerRouter {
     }
 
     public void connectToServer(InetSocketAddress targetServer, Channel playerChannel, Consumer<Channel> onSuccess, Consumer<Throwable> onError) {
-        MessageHandler InitialHandler = new MessageHandler(playerChannel);
-        
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    protected void initChannel(SocketChannel ch) throws Exception {
-                        ChannelPipeline pipeline = ch.pipeline();
-                        // Ajouter les handlers nécessaires pour gérer les paquets
-                        pipeline.addLast(InitialHandler);
+                    protected void initChannel(SocketChannel ch) {
+                        ch.pipeline()
+                            .addLast("varintFrameDecoder", new VarintFrameDecoder())
+                            .addLast("varintFrameEncoder", new VarintFrameEncoder())
+                            .addLast("messageHandler", new MessageHandler(playerChannel));
                     }
                 });
 
