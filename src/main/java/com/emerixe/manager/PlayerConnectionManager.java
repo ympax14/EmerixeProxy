@@ -34,9 +34,11 @@ public class PlayerConnectionManager {
             if (serverChannelMap.containsKey(playerChannel)) {
                 Channel chnl = serverChannelMap.get(playerChannel);
                 if (chnl.pipeline().last() == null) {
-                    String remoteAddress = chnl.remoteAddress().toString();
                     chnl.close();
-                    System.out.println("Canaux de " + playerChannel.remoteAddress() + " vers " + remoteAddress + " fermé.");
+                    if (chnl.remoteAddress() != null) {
+                        SocketAddress remoteAddress = chnl.remoteAddress();
+                        System.out.println("Canaux de " + playerChannel.remoteAddress() + " vers " + remoteAddress.toString() + " fermé.");
+                    }
                 }
             }
 
@@ -57,7 +59,7 @@ public class PlayerConnectionManager {
     public List<Channel> getPlayersConnectedToServer(SocketAddress address) {
         List<Channel> keys = new ArrayList<>();
         for (Map.Entry<Channel, Channel> entry : this.getServerChannelMap().entrySet()) {
-            if (entry.getValue().remoteAddress().toString().split(":")[0].equals(address.toString().split(":")[0])) {
+            if (entry.getValue().remoteAddress().toString().split(":")[0].replace("/", "").equals(address.toString().split(":")[0].replace("/", ""))) {
                 keys.add(entry.getKey());
             }
         }
@@ -66,21 +68,29 @@ public class PlayerConnectionManager {
     }
 
     public Channel getPlayerConnectedToServer(SocketAddress address) {
+        Channel playerChannel = null;
+
         for (Map.Entry<Channel, Channel> entry : this.getServerChannelMap().entrySet()) {
             if (entry.getValue().remoteAddress().equals(address)) {
-                return entry.getKey();
+                playerChannel = entry.getKey();
+                break;
             }
         }
 
-        return null;
+        return playerChannel;
     }
 
     public Channel getPlayerChannelFromRemoteAddress(SocketAddress address) {
+        Channel playerChannel = null;
+
         for (Channel channel : this.getServerChannelMap().keySet()) {
-            if (channel.remoteAddress().toString().split(":")[0] == address.toString().split(":")[0]) return channel;
+            if (channel.remoteAddress().toString().split(":")[0].replace("/", "").equals(address.toString().split(":")[0].replace("/", ""))) {
+                playerChannel = channel;
+                break;
+            }
         }
 
-        return null;
+        return playerChannel;
     }
 
     public Channel getServerConnectedToPlayer(Channel channel) {

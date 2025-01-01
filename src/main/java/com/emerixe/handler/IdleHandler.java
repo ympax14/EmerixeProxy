@@ -20,7 +20,7 @@ public class IdleHandler extends IdleStateHandler {
 
     @Override
     public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
-        if (evt.state() == IdleState.WRITER_IDLE) {
+        if (evt.state().equals(IdleState.WRITER_IDLE)) {
             if (isClient) {
                 System.out.println("Le canal " + ctx.channel().remoteAddress() + " a été fermé car le Client ne répond pas. (écriture)");
                 MinecraftProxy.getInstance().getPlayerConnectionManager().clearRemoteAddress(ctx.channel().remoteAddress());
