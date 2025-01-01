@@ -34,8 +34,9 @@ public class PlayerConnectionManager {
             if (serverChannelMap.containsKey(playerChannel)) {
                 Channel chnl = serverChannelMap.get(playerChannel);
                 if (chnl.pipeline().last() == null) {
+                    String remoteAddress = chnl.remoteAddress().toString();
                     chnl.close();
-                    System.out.println("Canaux de " + playerChannel.remoteAddress() + " vers " + chnl.remoteAddress() + " fermé.");
+                    System.out.println("Canaux de " + playerChannel.remoteAddress() + " vers " + remoteAddress + " fermé.");
                 }
             }
 
