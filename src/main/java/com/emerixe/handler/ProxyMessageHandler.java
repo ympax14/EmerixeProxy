@@ -29,7 +29,7 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
         // Intercepter le paquet "Login Start" envoyé par le client
         System.out.println("[PROXY] Nouveau joueur connecté");
 
-        MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(ctx.channel(), "hub");
+        //MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(ctx.channel(), "hub");
 
         // Pour intercepter les paquets, d'abord traiter les paquets qui arrivent
         // via la méthode channelRead, ici on est dans channelActive donc on ne peut pas
@@ -44,26 +44,38 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof ByteBuf) {
             ByteBuf buf = (ByteBuf) msg;
             ByteBuf copiedBuf = buf.copy();
+
+            buf.retain();
+            copiedBuf.retain();
     
             try {
                 int packetId = MinecraftPacket.readVarInt(buf); // Lire l'ID du paquet
 
-                /*if (packetId == 15) {
+                if (packetId == 15) {
                     //ctx.channel().writeAndFlush(msg);
                     // Rediriger le joueur vers le HUB
-                    //MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(ctx.channel(), "hub");
-                    //relayPacketToHub(copiedBuf);
-                } else {*/
+                    MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(
+                        "hub",
+                        ctx.channel(),
+                        channel -> {
+                            channel.writeAndFlush(copiedBuf);
+                        },
+                        error -> {
+
+                        }
+                    );
+                } else {
                     MinecraftPacket packet = packetRegistry.decodePacket(packetId, buf);
                     if (packet != null) {
                         handlePacket(packet);
                     }
-                //}
+                }
             } finally {
-                copiedBuf.release();
+                //copiedBuf.release();
             }
-        }
-        super.channelRead(ctx, msg);
+
+            super.channelRead(ctx, copiedBuf);
+        } else super.channelRead(ctx, msg);
     }
 
     private void handlePacket(MinecraftPacket packet) {
@@ -99,18 +111,6 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
             System.out.println("Le joueur a été transféré du serveur " + fromServer + " vers le serveur " + targetServer);
         }
         // Ajouter des cas pour d'autres paquets
-    }
-
-    private void relayPacketToHub(ByteBuf packet) {
-        ServerRouter serverRouter = MinecraftProxy.getInstance().getServerRouter();
-        Channel hubChannel = serverRouter.openServerChannel(serverRouter.getServer("hub")); // Obtenez le canal vers le hub
-    
-        if (hubChannel != null && hubChannel.isActive()) {
-            hubChannel.writeAndFlush(packet.retain());  // Relayer le paquet au serveur hub
-            System.out.println("Paquet ID 15 relayé directement au hub depuis le canal client.");
-        } else {
-            System.err.println("Le canal vers le hub est inactif ou inexistant. Impossible de relayer le paquet.");
-        }
     }
 
     @Override

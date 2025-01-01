@@ -3,7 +3,9 @@ package com.emerixe.router;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
+import com.emerixe.handler.MessageHandler;
 import com.emerixe.handler.ProxyMessageHandler;
 
 import io.netty.bootstrap.Bootstrap;
@@ -36,28 +38,38 @@ public class ServerRouter {
         return serverMap.getOrDefault(serverName, serverMap.get("hub")); // Serveur par défaut : hub
     }
 
-    public Channel openServerChannel(InetSocketAddress targetServer) {
+    public void connectToServer(InetSocketAddress targetServer, Channel playerChannel, Consumer<Channel> onSuccess, Consumer<Throwable> onError) {
+        MessageHandler InitialHandler = new MessageHandler(playerChannel);
+        
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group(group).channel(NioSocketChannel.class).handler(new ChannelInitializer<SocketChannel>() {
+        bootstrap.group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
                         // Ajouter les handlers nécessaires pour gérer les paquets
-                        pipeline.addLast(new ProxyMessageHandler());
+                        pipeline.addLast(InitialHandler);
                     }
                 });
 
         ChannelFuture future = bootstrap.connect(targetServer);
-        
+
         future.addListener((ChannelFuture f) -> {
             if (f.isSuccess()) {
-                System.out.println("Connexion réussie au serveur " + targetServer);                
+                MessageHandler messageHandler = new MessageHandler(playerChannel);
+                messageHandler.setServerChannel(f.channel());
+                messageHandler.linkChannels();
+
+                f.channel().pipeline().replace(MessageHandler.class, "clientMessageHandler", messageHandler);
+
+                System.out.println("Connexion réussie au serveur " + targetServer);
+                onSuccess.accept(f.channel()); // Appel du callback de succès
             } else {
                 System.err.println("Échec de la connexion au serveur " + targetServer);
+                onError.accept(f.cause()); // Appel du callback d'erreur
                 f.cause().printStackTrace();
             }
         });
-
-        return future.channel();
     }
 }
