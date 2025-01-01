@@ -51,7 +51,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 
                     MinecraftProxy.getInstance().getSchedulerExecutorService().addTask(() -> {
                         while (buf.refCnt() > 0) buf.release();
-                    }, 500, TimeUnit.MILLISECONDS);
+                    }, 200, TimeUnit.MILLISECONDS);
                 } else super.channelRead(c, msg);
             }
         })
@@ -72,10 +72,17 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 
                     MinecraftProxy.getInstance().getSchedulerExecutorService().addTask(() -> {
                         while (buf.refCnt() > 0) buf.release();
-                    }, 500, TimeUnit.MILLISECONDS);
+                    }, 200, TimeUnit.MILLISECONDS);
                 } else super.channelRead(c, msg);
             }
-        })
-        .addLast(new IdleHandler(0, 60, 0, true)); // 0 secondes pour READER_IDLE, 60 secondes pour WRITER_IDLE, 0 secondes pour ALL_IDLE
+
+            @Override
+            public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                System.out.println("[PROXY] Client disconnected: " + ctx.channel().remoteAddress());
+                MinecraftProxy.getInstance().getPlayerConnectionManager().clearRemoteAddress(ctx.channel().remoteAddress());
+                super.channelInactive(ctx);
+            }
+        });
+        //.addLast(new IdleHandler(0, 60, 0, true)); // 0 secondes pour READER_IDLE, 60 secondes pour WRITER_IDLE, 0 secondes pour ALL_IDLE
     }
 }

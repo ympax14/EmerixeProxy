@@ -47,14 +47,14 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
                 if (packetId == 15) {
                     if (!MinecraftProxy.getInstance().getPlayerConnectionManager().playerIsAlreadyConnected(ctx.channel().remoteAddress())) {
                         System.out.println("[PROXY] Nouveau joueur (" + ctx.channel().remoteAddress() + ") connecté, redirection au HUB.");
-                    }
 
-                    MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(
+                        MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(
                         "hub",
                         ctx.channel(),
                         channel -> {
                             channel.writeAndFlush(copiedBuf2);
                         }, null);
+                    }
                 } else {
                     buf.retain();
                     MinecraftPacket packet = packetRegistry.decodePacket(packetId, buf);
@@ -72,7 +72,7 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
             MinecraftProxy.getInstance().getSchedulerExecutorService().addTask(() -> {
                 while (copiedBuf2.refCnt() > 0) copiedBuf2.release();
                 while (buf.refCnt() > 0) buf.release();
-            }, 500, TimeUnit.MILLISECONDS);
+            }, 200, TimeUnit.MILLISECONDS);
 
             super.channelRead(ctx, buf);
         } else super.channelRead(ctx, msg);
@@ -106,7 +106,6 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
             
             fromServer = session.getOrigin();
             session.setOrigin(targetServer);  // Met à jour le serveur cible
-            
 
             System.out.println("Le joueur a été transféré du serveur " + fromServer + " vers le serveur " + targetServer);
         }

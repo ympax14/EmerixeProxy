@@ -29,19 +29,19 @@ public class PlayerConnectionManager {
      */
     public void connectToServer(String targetServerName, Channel playerChannel, Consumer<Channel> onSuccess, Consumer<Throwable> onError) {
         InetSocketAddress targetServer = MinecraftProxy.getInstance().getServerRouter().getServer(targetServerName);
-        MinecraftProxy.getInstance().getServerRouter().connectToServer(targetServer, playerChannel, channel -> {
 
-            if (serverChannelMap.containsKey(playerChannel)) {
-                Channel chnl = serverChannelMap.get(playerChannel);
-                if (chnl.pipeline().last() == null) {
-                    chnl.close();
-                    if (chnl.remoteAddress() != null) {
-                        SocketAddress remoteAddress = chnl.remoteAddress();
-                        System.out.println("Canaux de " + playerChannel.remoteAddress() + " vers " + remoteAddress.toString() + " fermé.");
-                    }
+        if (serverChannelMap.containsKey(playerChannel)) {
+            Channel chnl = serverChannelMap.get(playerChannel);
+            if (chnl.pipeline().last() == null) {
+                chnl.close();
+                if (chnl.remoteAddress() != null) {
+                    SocketAddress remoteAddress = chnl.remoteAddress();
+                    System.out.println("Canaux de " + playerChannel.remoteAddress() + " vers " + remoteAddress.toString() + " fermé.");
                 }
             }
+        }
 
+        MinecraftProxy.getInstance().getServerRouter().connectToServer(targetServer, playerChannel, channel -> {
             serverChannelMap.put(playerChannel, channel);
             if (onSuccess != null) onSuccess.accept(channel);
         }, onError);
@@ -51,7 +51,10 @@ public class PlayerConnectionManager {
         Channel channel = this.getPlayerChannelFromRemoteAddress(address);
         if (this.getServerChannelMap().containsKey(channel)) {
             this.getServerChannelMap().remove(channel);
-            this.getServerConnectedToPlayer(channel).close();
+
+            Channel chnl = this.getServerConnectedToPlayer(channel);
+
+            if (chnl != null) chnl.close(); // On vérifie si le channel correspond à celui d'un Serveur, si oui on le ferme.
             channel.close();
         }
     }
