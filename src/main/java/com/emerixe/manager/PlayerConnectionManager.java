@@ -105,6 +105,12 @@ public class PlayerConnectionManager {
         return serverChannelMap.getOrDefault(this.getPlayerChannelFromRemoteAddress(address), null);
     }
 
+    /**
+     * Vérifie si un joueur est déjà connecté.
+     *
+     * @param address Adresse du joueur
+     * @return Vrai si le joueur est déjà connecté, faux sinon
+     */
     public Boolean playerIsAlreadyConnected(SocketAddress address) {
         return getPlayerChannelFromRemoteAddress(address) != null;
     }

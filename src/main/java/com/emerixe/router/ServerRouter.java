@@ -1,7 +1,5 @@
 package com.emerixe.router;
 
-import com.emerixe.handler.VarintFrameDecoder;
-import com.emerixe.handler.VarintFrameEncoder;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,8 +44,10 @@ public class ServerRouter {
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         ch.pipeline()
-                            .addLast("varintFrameDecoder", new VarintFrameDecoder())
-                            .addLast("varintFrameEncoder", new VarintFrameEncoder())
+                            // .addLast("varintFrameDecoder", new VarintFrameDecoder())
+                            // .addLast("varintFrameEncoder", new VarintFrameEncoder())
+                            // .addLast("varintFrame", new VarintFrameChecker())
+                            // .addLast("varintFrameDecoder", new VarintFrameDecoder())
                             .addLast("messageHandler", new MessageHandler(playerChannel));
                     }
                 });

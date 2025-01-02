@@ -3,9 +3,7 @@ package com.emerixe.handler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
-import com.emerixe.MinecraftProxy;
 import com.emerixe.packet.MinecraftPacket;
 import com.emerixe.packet.packets.LoginStartPacket;
 import com.emerixe.packet.packets.ServerTransferPacket;
@@ -36,46 +34,47 @@ public class ProxyMessageHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
-            ByteBuf buf = (ByteBuf) msg;
-            ByteBuf copiedBuf = buf.copy();
-            ByteBuf copiedBuf2 = buf.copy();
+            ByteBuf byteBuf = (ByteBuf) msg;
     
             try {
-                int packetId = MinecraftPacket.readVarInt(copiedBuf); // Lire l'ID du paquet
+                int packetId = MinecraftPacket.readVarInt(byteBuf); // Lire l'ID du paquet
 
                 // Intercepter le paquet "LoginStart" envoyé par le client
-                if (packetId == 15) {
-                    if (!MinecraftProxy.getInstance().getPlayerConnectionManager().playerIsAlreadyConnected(ctx.channel().remoteAddress())) {
-                        System.out.println("[PROXY] Nouveau joueur (" + ctx.channel().remoteAddress() + ") connecté, redirection au HUB.");
+                if (packetId == 0x00) {
+                    // Lire les données de l'handshake
+                    int protocolVersion = MinecraftPacket.readVarInt(byteBuf); // Version du protocole
+                    String serverAddress = MinecraftPacket.readString(byteBuf); // Adresse du serveur
+                    int serverPort = byteBuf.readUnsignedShort(); // Port du serveur
+                    int nextState = MinecraftPacket.readVarInt(byteBuf); // État suivant (1 = status, 2 = login)
 
-                        MinecraftProxy.getInstance().getPlayerConnectionManager().connectToServer(
-                        "hub",
-                        ctx.channel(),
-                        channel -> {
-                            channel.writeAndFlush(copiedBuf2);
-                        }, null);
+                    // Afficher les informations de l'handshake pour debug
+                    System.out.println("Handshake received:");
+                    System.out.println("Protocol Version: " + protocolVersion);
+                    System.out.println("Server Address: " + serverAddress);
+                    System.out.println("Server Port: " + serverPort);
+                    System.out.println("Next State: " + nextState);
+
+                    // Logique pour rediriger ou gérer la connexion ici
+                    if (nextState == 1) {
+                        // Le client veut obtenir des informations sur le serveur (status)
+                        System.out.println("Switching to status state");
+                    } else if (nextState == 2) {
+                        // Le client veut se connecter (login)
+                        System.out.println("Switching to login state");
                     }
                 } else {
-                    buf.retain();
-                    MinecraftPacket packet = packetRegistry.decodePacket(packetId, buf);
-
-                    if (packet != null) {
-                        handlePacket(packet);
-                    }
+                    System.out.println("Received packet with ID: " + packetId);
+                    byteBuf.resetReaderIndex();
+                    ctx.fireChannelRead(byteBuf);
                 }
             } catch (Exception e) {
+                System.out.println("A packet have been received but an error occured while reading it.");
+                byteBuf.release();
                 // TODO: handle exception
             }
-
-            while (copiedBuf.refCnt() > 0) copiedBuf.release();
-
-            MinecraftProxy.getInstance().getSchedulerExecutorService().addTask(() -> {
-                while (copiedBuf2.refCnt() > 0) copiedBuf2.release();
-                while (buf.refCnt() > 0) buf.release();
-            }, 200, TimeUnit.MILLISECONDS);
-
-            super.channelRead(ctx, buf);
-        } else super.channelRead(ctx, msg);
+        } else {
+            ctx.fireChannelRead(msg);
+        }
     }
 
     private void handlePacket(MinecraftPacket packet) {

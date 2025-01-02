@@ -2,7 +2,6 @@ package com.emerixe;
 
 import com.emerixe.handler.ProxyMessageHandler;
 import com.emerixe.handler.VarintFrameDecoder;
-import com.emerixe.handler.VarintFrameEncoder;
 import com.emerixe.manager.PlayerConnectionManager;
 import com.emerixe.manager.RedisManager;
 import com.emerixe.router.ServerRouter;
@@ -66,11 +65,11 @@ public class MinecraftProxy {
                         protected void initChannel(SocketChannel ch) {
                             ch.pipeline()
                                 .addLast("varintFrameDecoder", new VarintFrameDecoder())
-                                .addLast("varintFrameEncoder", new VarintFrameEncoder())
                                 .addLast("proxyHandler", new ProxyMessageHandler());
                         }
                     });
 
+            System.out.println("Démarrage du proxy Minecraft sur le port " + port);
             ChannelFuture future = bootstrap.bind(port).sync();
             System.out.println("Proxy Minecraft en écoute sur le port " + port);
             future.channel().closeFuture().sync();
@@ -81,6 +80,6 @@ public class MinecraftProxy {
     }
 
     public static void main(String[] args) throws Exception {
-        new MinecraftProxy(45654, "127.0.0.1", 18546, "127.0.0.1", 48216).start();
+        new MinecraftProxy(25565, "127.0.0.1", 18546, "127.0.0.1", 48216).start();
     }
 }
